@@ -1,18 +1,17 @@
 import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule, Router } from '@angular/router';
+import { RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
-import { CheckboxModule } from 'primeng/checkbox';
 import { InputTextModule } from 'primeng/inputtext';
-import { PasswordModule } from 'primeng/password';
 import { RippleModule } from 'primeng/ripple';
 import { AppFloatingConfigurator } from '../../layout/component/app.floatingconfigurator';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
-    selector: 'app-login',
+    selector: 'app-forgot-password',
     standalone: true,
-    imports: [ButtonModule, CheckboxModule, InputTextModule, PasswordModule, FormsModule, RouterModule, RippleModule, AppFloatingConfigurator],
+    imports: [CommonModule, ButtonModule, InputTextModule, FormsModule, RouterModule, RippleModule, AppFloatingConfigurator],
     template: `
         <app-floating-configurator />
         <div class="min-h-screen flex items-center justify-center relative overflow-hidden"
@@ -38,23 +37,38 @@ import { AuthService } from '../../services/auth.service';
                                 <div class="relative">
                                     <div class="absolute inset-0 bg-gradient-to-r from-yellow-400 to-blue-500 rounded-full blur-lg opacity-50"></div>
                                     <div class="relative bg-gradient-to-r from-yellow-400 to-blue-500 p-4 rounded-full">
-                                        <i class="pi pi-bolt text-3xl text-white"></i>
+                                        <i class="pi pi-key text-3xl text-white"></i>
                                     </div>
                                 </div>
                             </div>
                             
                             <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-yellow-600 bg-clip-text text-transparent mb-2">
-                                Bienvenue !
+                                Mot de passe oublié ?
                             </h1>
-                            <p class="text-gray-600 font-medium">Connectez-vous à votre compte Elect Général Hanafi</p>
+                            <p class="text-gray-600 font-medium text-center leading-relaxed">
+                                Pas de souci ! Entrez votre adresse email et nous vous enverrons un lien pour réinitialiser votre mot de passe.
+                            </p>
+                        </div>
+
+                        <!-- Success Message -->
+                        <div *ngIf="emailSent" class="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl">
+                            <div class="flex items-center">
+                                <i class="pi pi-check-circle text-green-500 text-xl mr-3"></i>
+                                <div>
+                                    <h3 class="text-green-800 font-semibold">Email envoyé !</h3>
+                                    <p class="text-green-700 text-sm mt-1">
+                                        Vérifiez votre boîte mail et suivez les instructions pour réinitialiser votre mot de passe.
+                                    </p>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Form -->
-                        <form class="space-y-6" (ngSubmit)="login()">
+                        <form *ngIf="!emailSent" class="space-y-6" (ngSubmit)="sendResetEmail()">
                             <!-- Email -->
                             <div>
                                 <label for="email" class="block text-gray-700 font-semibold mb-2">
-                                    <i class="pi pi-envelope mr-2 text-blue-500"></i>Email
+                                    <i class="pi pi-envelope mr-2 text-blue-500"></i>Adresse email
                                 </label>
                                 <input pInputText 
                                        id="email" 
@@ -62,45 +76,15 @@ import { AuthService } from '../../services/auth.service';
                                        placeholder="votre@email.com" 
                                        class="w-full !border-2 !border-gray-200 focus:!border-yellow-400 !rounded-xl !py-3 !px-4 transition-all duration-300" 
                                        [(ngModel)]="email" 
-                                       name="email" />
+                                       name="email"
+                                       required />
                             </div>
 
-                            <!-- Password -->
-                            <div>
-                                <label for="password" class="block text-gray-700 font-semibold mb-2">
-                                    <i class="pi pi-lock mr-2 text-blue-500"></i>Mot de passe
-                                </label>
-                                <p-password id="password" 
-                                           [(ngModel)]="password" 
-                                           name="password"
-                                           placeholder="Votre mot de passe" 
-                                           [toggleMask]="true" 
-                                           [fluid]="true"
-                                           [feedback]="false"
-                                           styleClass="custom-password">
-                                </p-password>
-                            </div>
-
-                            <!-- Remember me and Forgot password -->
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center space-x-2">
-                                    <p-checkbox [(ngModel)]="rememberMe" 
-                                               name="rememberMe"
-                                               id="remember" 
-                                               binary></p-checkbox>
-                                    <label for="remember" class="text-gray-600 text-sm">Se souvenir de moi</label>
-                                </div>
-                                <a routerLink="/auth/forgot-password" 
-                                   class="text-blue-600 hover:text-yellow-600 font-semibold text-sm transition-colors duration-300">
-                                    Mot de passe oublié ?
-                                </a>
-                            </div>
-
-                            <!-- Login Button -->
+                            <!-- Send Reset Email Button -->
                             <div class="pt-4">
                                 <div class="relative">
                                     <div class="absolute inset-0 bg-gradient-to-r from-yellow-400 to-blue-500 rounded-xl blur opacity-50"></div>
-                                    <p-button label="⚡ Se connecter ⚡" 
+                                    <p-button label="🔑 Envoyer le lien de réinitialisation" 
                                              type="submit"
                                              styleClass="w-full !py-4 !text-lg !font-bold !bg-gradient-to-r !from-yellow-400 !to-blue-500 hover:!from-yellow-500 hover:!to-blue-600 !border-0 !rounded-xl !text-white !shadow-lg hover:!shadow-xl !transition-all !duration-300 !transform hover:!scale-105"
                                              [loading]="isLoading">
@@ -109,6 +93,16 @@ import { AuthService } from '../../services/auth.service';
                             </div>
                         </form>
 
+                        <!-- Back to Login -->
+                        <div *ngIf="emailSent" class="pt-6">
+                            <div class="relative">
+                                <p-button label="✉️ Renvoyer l'email" 
+                                         styleClass="w-full !py-3 !text-base !font-semibold !bg-gray-100 hover:!bg-gray-200 !border-2 !border-gray-300 !rounded-xl !text-gray-700 !transition-all !duration-300"
+                                         (onClick)="resendEmail()">
+                                </p-button>
+                            </div>
+                        </div>
+
                         <!-- Divider -->
                         <div class="flex items-center my-6">
                             <div class="flex-1 border-t border-gray-300"></div>
@@ -116,15 +110,23 @@ import { AuthService } from '../../services/auth.service';
                             <div class="flex-1 border-t border-gray-300"></div>
                         </div>
 
-                        <!-- Register Link -->
-                        <div class="text-center">
-                            <p class="text-gray-600">
-                                Pas encore de compte ? 
+                        <!-- Navigation Links -->
+                        <div class="space-y-3 text-center">
+                            <div>
+                                <a routerLink="/auth/login" 
+                                   class="inline-flex items-center text-blue-600 hover:text-yellow-600 font-semibold transition-colors duration-300">
+                                    <i class="pi pi-sign-in mr-2"></i>
+                                    Retour à la connexion
+                                </a>
+                            </div>
+                            
+                            <div>
+                                <span class="text-gray-600">Pas encore de compte ? </span>
                                 <a routerLink="/auth/register" 
                                    class="text-blue-600 hover:text-yellow-600 font-semibold transition-colors duration-300">
                                     S'inscrire
                                 </a>
-                            </p>
+                            </div>
                         </div>
 
                         <!-- Back to Home -->
@@ -141,66 +143,53 @@ import { AuthService } from '../../services/auth.service';
         </div>
 
         <style>
-            :host ::ng-deep .custom-password .p-password-input {
-                border: 2px solid #e5e7eb !important;
-                border-radius: 0.75rem !important;
-                padding: 0.75rem 1rem !important;
+            :host ::ng-deep .p-inputtext {
                 transition: all 0.3s ease !important;
             }
             
-            :host ::ng-deep .custom-password .p-password-input:focus {
-                border-color: #fbbf24 !important;
+            :host ::ng-deep .p-inputtext:focus {
                 box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.1) !important;
-            }
-            
-            :host ::ng-deep .p-checkbox .p-checkbox-box {
-                border: 2px solid #e5e7eb !important;
-                border-radius: 0.375rem !important;
-            }
-            
-            :host ::ng-deep .p-checkbox .p-checkbox-box.p-highlight {
-                background: linear-gradient(135deg, #fbbf24, #3b82f6) !important;
-                border-color: #fbbf24 !important;
             }
         </style>
     `
 })
-export class Login {
+export class ForgotPassword {
     email: string = '';
-    password: string = '';
-    rememberMe: boolean = false;
+    emailSent: boolean = false;
     isLoading: boolean = false;
 
-    constructor(
-        private authService: AuthService,
-        private router: Router
-    ) {}
+    constructor(private authService: AuthService) {}
 
-    login() {
-        if (!this.email || !this.password) {
-            alert('Veuillez remplir tous les champs');
+    sendResetEmail() {
+        if (!this.email) {
+            alert('Veuillez entrer votre adresse email');
             return;
         }
 
         this.isLoading = true;
-
-        // Use the new AuthService login method
-        this.authService.loginWithCredentials(this.email, this.password).subscribe({
+        
+        // Use the new AuthService resetPassword method
+        this.authService.requestPasswordReset(this.email).subscribe({
             next: (response) => {
                 this.isLoading = false;
                 
-                if (response['jwtToken']) {
-                    alert('Connexion réussie !');
-                    this.router.navigate(['/']);
+                if (response['message']) {
+                    this.emailSent = true;
+                    console.log('Password reset email sent:', response['message']);
                 } else if (response['error']) {
-                    alert(response['error']);
+                    alert('Erreur: ' + response['error']);
                 }
             },
             error: (error) => {
                 this.isLoading = false;
-                alert('Une erreur est survenue lors de la connexion');
-                console.error('Login error:', error);
+                alert('Une erreur est survenue lors de l\'envoi de l\'email');
+                console.error('Reset password error:', error);
             }
         });
+    }
+
+    resendEmail() {
+        this.emailSent = false;
+        this.sendResetEmail();
     }
 }

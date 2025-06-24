@@ -10,7 +10,7 @@ import { AppFloatingConfigurator } from '../../layout/component/app.floatingconf
 import { AuthService } from '../../services/auth.service';
 
 @Component({
-    selector: 'app-login',
+    selector: 'app-register',
     standalone: true,
     imports: [ButtonModule, CheckboxModule, InputTextModule, PasswordModule, FormsModule, RouterModule, RippleModule, AppFloatingConfigurator],
     template: `
@@ -44,13 +44,27 @@ import { AuthService } from '../../services/auth.service';
                             </div>
                             
                             <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-yellow-600 bg-clip-text text-transparent mb-2">
-                                Bienvenue !
+                                Rejoignez-nous
                             </h1>
-                            <p class="text-gray-600 font-medium">Connectez-vous à votre compte Elect Général Hanafi</p>
+                            <p class="text-gray-600 font-medium">Créez votre compte Elect Général Hanafi</p>
                         </div>
 
                         <!-- Form -->
-                        <form class="space-y-6" (ngSubmit)="login()">
+                        <form class="space-y-6">
+                            <!-- Full Name -->
+                            <div>
+                                <label for="fullName" class="block text-gray-700 font-semibold mb-2">
+                                    <i class="pi pi-user mr-2 text-blue-500"></i>Nom complet
+                                </label>
+                                <input pInputText 
+                                       id="fullName" 
+                                       type="text" 
+                                       placeholder="Votre nom complet" 
+                                       class="w-full !border-2 !border-gray-200 focus:!border-yellow-400 !rounded-xl !py-3 !px-4 transition-all duration-300" 
+                                       [(ngModel)]="fullName" 
+                                       name="fullName" />
+                            </div>
+
                             <!-- Email -->
                             <div>
                                 <label for="email" class="block text-gray-700 font-semibold mb-2">
@@ -65,6 +79,20 @@ import { AuthService } from '../../services/auth.service';
                                        name="email" />
                             </div>
 
+                            <!-- Phone -->
+                            <div>
+                                <label for="phone" class="block text-gray-700 font-semibold mb-2">
+                                    <i class="pi pi-phone mr-2 text-blue-500"></i>Téléphone
+                                </label>
+                                <input pInputText 
+                                       id="phone" 
+                                       type="tel" 
+                                       placeholder="+33 6 12 34 56 78" 
+                                       class="w-full !border-2 !border-gray-200 focus:!border-yellow-400 !rounded-xl !py-3 !px-4 transition-all duration-300" 
+                                       [(ngModel)]="phone" 
+                                       name="phone" />
+                            </div>
+
                             <!-- Password -->
                             <div>
                                 <label for="password" class="block text-gray-700 font-semibold mb-2">
@@ -73,7 +101,23 @@ import { AuthService } from '../../services/auth.service';
                                 <p-password id="password" 
                                            [(ngModel)]="password" 
                                            name="password"
-                                           placeholder="Votre mot de passe" 
+                                           placeholder="Mot de passe sécurisé" 
+                                           [toggleMask]="true" 
+                                           [fluid]="true"
+                                           [feedback]="true"
+                                           styleClass="custom-password">
+                                </p-password>
+                            </div>
+
+                            <!-- Confirm Password -->
+                            <div>
+                                <label for="confirmPassword" class="block text-gray-700 font-semibold mb-2">
+                                    <i class="pi pi-lock mr-2 text-blue-500"></i>Confirmer le mot de passe
+                                </label>
+                                <p-password id="confirmPassword" 
+                                           [(ngModel)]="confirmPassword" 
+                                           name="confirmPassword"
+                                           placeholder="Confirmez votre mot de passe" 
                                            [toggleMask]="true" 
                                            [fluid]="true"
                                            [feedback]="false"
@@ -81,28 +125,26 @@ import { AuthService } from '../../services/auth.service';
                                 </p-password>
                             </div>
 
-                            <!-- Remember me and Forgot password -->
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center space-x-2">
-                                    <p-checkbox [(ngModel)]="rememberMe" 
-                                               name="rememberMe"
-                                               id="remember" 
-                                               binary></p-checkbox>
-                                    <label for="remember" class="text-gray-600 text-sm">Se souvenir de moi</label>
-                                </div>
-                                <a routerLink="/auth/forgot-password" 
-                                   class="text-blue-600 hover:text-yellow-600 font-semibold text-sm transition-colors duration-300">
-                                    Mot de passe oublié ?
-                                </a>
+                            <!-- Terms and Conditions -->
+                            <div class="flex items-start space-x-3">
+                                <p-checkbox [(ngModel)]="acceptTerms" 
+                                           name="acceptTerms"
+                                           id="terms" 
+                                           binary 
+                                           class="mt-1"></p-checkbox>
+                                <label for="terms" class="text-sm text-gray-600 leading-relaxed">
+                                    J'accepte les <a href="#" class="text-blue-600 hover:text-yellow-600 font-semibold">conditions d'utilisation</a> 
+                                    et la <a href="#" class="text-blue-600 hover:text-yellow-600 font-semibold">politique de confidentialité</a>
+                                </label>
                             </div>
 
-                            <!-- Login Button -->
+                            <!-- Register Button -->
                             <div class="pt-4">
                                 <div class="relative">
                                     <div class="absolute inset-0 bg-gradient-to-r from-yellow-400 to-blue-500 rounded-xl blur opacity-50"></div>
-                                    <p-button label="⚡ Se connecter ⚡" 
-                                             type="submit"
+                                    <p-button label="⚡ Créer mon compte ⚡" 
                                              styleClass="w-full !py-4 !text-lg !font-bold !bg-gradient-to-r !from-yellow-400 !to-blue-500 hover:!from-yellow-500 hover:!to-blue-600 !border-0 !rounded-xl !text-white !shadow-lg hover:!shadow-xl !transition-all !duration-300 !transform hover:!scale-105"
+                                             (onClick)="register()"
                                              [loading]="isLoading">
                                     </p-button>
                                 </div>
@@ -116,19 +158,19 @@ import { AuthService } from '../../services/auth.service';
                             <div class="flex-1 border-t border-gray-300"></div>
                         </div>
 
-                        <!-- Register Link -->
+                        <!-- Login Link -->
                         <div class="text-center">
                             <p class="text-gray-600">
-                                Pas encore de compte ? 
-                                <a routerLink="/auth/register" 
+                                Déjà un compte ? 
+                                <a routerLink="/auth/login" 
                                    class="text-blue-600 hover:text-yellow-600 font-semibold transition-colors duration-300">
-                                    S'inscrire
+                                    Se connecter
                                 </a>
                             </p>
                         </div>
 
                         <!-- Back to Home -->
-                        <div class="text-center mt-6 pt-4 border-t border-gray-200">
+                        <div class="text-center mt-4">
                             <a routerLink="/" 
                                class="inline-flex items-center text-gray-500 hover:text-blue-600 transition-colors duration-300">
                                 <i class="pi pi-arrow-left mr-2"></i>
@@ -165,41 +207,57 @@ import { AuthService } from '../../services/auth.service';
         </style>
     `
 })
-export class Login {
+export class Register {
+    fullName: string = '';
     email: string = '';
+    phone: string = '';
     password: string = '';
-    rememberMe: boolean = false;
+    confirmPassword: string = '';
+    acceptTerms: boolean = false;
     isLoading: boolean = false;
 
     constructor(
-        private authService: AuthService,
-        private router: Router
+        private router: Router,
+        private authService: AuthService
     ) {}
 
-    login() {
-        if (!this.email || !this.password) {
+    register() {
+        if (!this.acceptTerms) {
+            alert('Veuillez accepter les conditions d\'utilisation');
+            return;
+        }
+        
+        if (this.password !== this.confirmPassword) {
+            alert('Les mots de passe ne correspondent pas');
+            return;
+        }
+
+        if (!this.fullName || !this.email || !this.phone || !this.password) {
             alert('Veuillez remplir tous les champs');
             return;
         }
 
         this.isLoading = true;
 
-        // Use the new AuthService login method
-        this.authService.loginWithCredentials(this.email, this.password).subscribe({
+        // Use the new AuthService signup method
+        this.authService.signupWithCredentials(this.fullName, this.email, this.password).subscribe({
             next: (response) => {
                 this.isLoading = false;
                 
-                if (response['jwtToken']) {
-                    alert('Connexion réussie !');
-                    this.router.navigate(['/']);
+                if (response['message']) {
+                    alert(response['message']);
+                    // Navigate to email verification page
+                    this.router.navigate(['/auth/verify-email'], { 
+                        queryParams: { email: this.email } 
+                    });
                 } else if (response['error']) {
-                    alert(response['error']);
+                    alert('Erreur lors de l\'inscription: ' + response['error']);
                 }
             },
             error: (error) => {
                 this.isLoading = false;
-                alert('Une erreur est survenue lors de la connexion');
-                console.error('Login error:', error);
+                alert('Une erreur est survenue lors de l\'inscription');
+                console.error('Registration error:', error);
             }
         });
     }

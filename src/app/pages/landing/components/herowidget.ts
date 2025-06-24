@@ -24,9 +24,24 @@ import { RippleModule } from 'primeng/ripple';
                     Installations électriques, maintenance industrielle et solutions énergétiques sur mesure. 
                     Votre partenaire de confiance pour tous vos projets électriques.
                 </p>
-                <div class="flex justify-center sm:justify-start">
-                    <button pButton pRipple [rounded]="true" type="button" label="Demander un Devis" 
-                            class="!text-xl !px-12 !py-4 bg-yellow-500 hover:bg-yellow-600 border-yellow-500 !font-bold shadow-lg transform hover:scale-105 transition-all duration-300"></button>
+                
+                <div class="flex justify-center sm:justify-start mb-8">
+                    <div class="relative">
+                        <!-- Glowing background effect -->
+                        <div class="absolute inset-0 bg-yellow-400 rounded-full blur-lg opacity-75 animate-pulse"></div>
+                        <!-- Main button -->
+                        <button pButton pRipple [rounded]="true" type="button" label="⚡ Demander un Devis Gratuit ⚡" 
+                                class="relative !text-2xl !px-16 !py-6 !font-black shadow-2xl transform hover:scale-110 transition-all duration-500 ease-out hover:shadow-yellow-500/50 border-2 border-yellow-400 bg-yellow-500 hover:bg-yellow-600 text-black uppercase tracking-wide"></button>
+                        <!-- Animated border -->
+                        <div class="absolute inset-0 rounded-full border-2 border-yellow-300 animate-ping opacity-20"></div>
+                    </div>
+                </div>
+                
+                <!-- Secondary CTA -->
+                <div class="flex justify-center sm:justify-start mb-6">
+                    <p class="text-yellow-300 text-lg font-semibold animate-bounce">
+                        📞 Devis en 24h • Intervention Rapide • Garantie 5 ans
+                    </p>
                 </div>
                 
                 <!-- Key Stats -->
@@ -48,20 +63,20 @@ import { RippleModule } from 'primeng/ripple';
             
             <div class="flex-1 flex justify-center lg:justify-center mt-8 lg:mt-0">
                 <div class="relative">
-                    <div class="absolute inset-0 bg-gradient-to-r from-blue-400 to-green-400 rounded-full blur-3xl opacity-20 scale-110"></div>
+                    <div class="absolute inset-0 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-full blur-3xl opacity-20 scale-110"></div>
                     <!-- Border container -->
                     <div class="relative w-96 h-96 md:w-[450px] md:h-[450px] rounded-full border-4 border-white/50 shadow-2xl hover:scale-105 transition-transform duration-300 ease-in-out">
                         <img src="picture/photooo-modified.png" 
                              alt="Électricien professionnel travaillant sur une installation électrique moderne" 
                              class="w-full h-full object-cover object-center rounded-full" />
                     </div>
-                    <div class="absolute inset-0 rounded-full bg-gradient-to-tr from-blue-500/10 to-green-500/10 hover:from-blue-500/20 hover:to-green-500/20 transition-all duration-300"></div>
+                    <div class="absolute inset-0 rounded-full bg-gradient-to-tr from-yellow-500/10 to-yellow-600/10 hover:from-yellow-500/20 hover:to-yellow-600/20 transition-all duration-300"></div>
                     
                     <!-- Floating Icons -->
-                    <div class="absolute -top-4 -right-4 bg-yellow-500 text-white p-3 rounded-full shadow-lg animate-bounce">
+                    <div class="absolute -top-4 -right-4 bg-yellow-500 text-black p-3 rounded-full shadow-lg animate-bounce">
                         <i class="pi pi-bolt text-xl"></i>
                     </div>
-                    <div class="absolute -bottom-4 -left-4 bg-blue-500 text-white p-3 rounded-full shadow-lg animate-pulse">
+                    <div class="absolute -bottom-4 -left-4 bg-yellow-600 text-black p-3 rounded-full shadow-lg animate-pulse">
                         <i class="pi pi-cog text-xl"></i>
                     </div>
                 </div>
