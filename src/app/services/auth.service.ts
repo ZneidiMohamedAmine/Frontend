@@ -6,6 +6,7 @@ import {
   Utilisateur, 
   EmailRequest, 
   PasswordDto, 
+  EmailVerificationDto,
   AuthResponse, 
   LoginRequest, 
   SignupRequest, 
@@ -77,7 +78,7 @@ export class AuthService {
    */
   signup(utilisateur: Utilisateur): Observable<{ [key: string]: string }> {
     return this.http.post<{ [key: string]: string }>(
-      `${this.apiUrl}/signup`, 
+      `${this.apiUrl}/auth/signup`, 
       utilisateur, 
       this.getHttpOptions()
     ).pipe(
@@ -95,7 +96,7 @@ export class AuthService {
    */
   login(utilisateur: Utilisateur): Observable<{ [key: string]: string }> {
     return this.http.post<{ [key: string]: string }>(
-      `${this.apiUrl}/login`, 
+      `${this.apiUrl}/auth/login`, 
       utilisateur, 
       this.getHttpOptions()
     ).pipe(
@@ -103,13 +104,16 @@ export class AuthService {
         // If login successful and token received, store it
         if (response['jwtToken']) {
           localStorage.setItem(this.tokenKey, response['jwtToken']);
-          // You might want to decode the JWT to get user info
-          // For now, creating a basic user object
+          
+          // Decode JWT to get user info (basic implementation)
+          const tokenPayload = this.decodeJWT(response['jwtToken']);
+          
           const user: User = {
-            id: 'user_' + Date.now(),
-            email: utilisateur.email || '',
-            fullName: utilisateur.nom || '',
-            isEmailVerified: true
+            id: tokenPayload?.sub || 'user_' + Date.now(),
+            email: utilisateur.email || tokenPayload?.email || '',
+            fullName: utilisateur.nom || tokenPayload?.name || '',
+            isEmailVerified: true,
+            role: tokenPayload?.role || Role.Client // Default to Client role
           };
           localStorage.setItem(this.userKey, JSON.stringify(user));
           this.currentUserSubject.next(user);
@@ -130,7 +134,7 @@ export class AuthService {
    */
   resetPassword(emailRequest: EmailRequest): Observable<{ [key: string]: string }> {
     return this.http.post<{ [key: string]: string }>(
-      `${this.apiUrl}/resetPassword`, 
+      `${this.apiUrl}/auth/resetPassword`, 
       emailRequest, 
       this.getHttpOptions()
     ).pipe(
@@ -142,18 +146,69 @@ export class AuthService {
   }
 
   /**
+   * Verificationfunction - POST request
+   * @param emailRequest - EmailRequest object containing email
+   * @returns Observable<Map<String, String>> with "message" or "error" key
+   */
+  verifyEmail(emailRequest: EmailRequest): Observable<{ [key: string]: string }> {
+    return this.http.post<{ [key: string]: string }>(
+      `${this.apiUrl}/auth/verifyEmail`, 
+      emailRequest, 
+      this.getHttpOptions()
+    ).pipe(
+      catchError(error => {
+        console.error('Verify email error:', error);
+        return of({ error: 'Une erreur est survenue lors de la vérification de l\'email' });
+      })
+    );
+  }
+
+  /**
+  * Verify Email Token function - POST request
+  * @param emailVerificationDto - EmailVerificationDto object containing token
+  * @returns Observable<Map<String, String>> with "message" or "error" key
+  */
+  verifyEmailToken(emailVerificationDto: EmailVerificationDto): Observable<{ [key: string]: string }> {
+  return this.http.post<{ [key: string]: string }>(
+  `${this.apiUrl}/auth/verifyEmailToken`,
+  emailVerificationDto,
+  this.getHttpOptions()
+  ).pipe(
+  catchError(error => {
+  console.error('Verify email token error:', error);
+  return of({ error: 'Une erreur est survenue lors de la vérification du token' });
+  })
+  );
+  }
+
+  /**
    * Redirect to Reset Password Page - GET request
    * @param token - String token as request parameter
    * @returns Observable<any> - This will handle the redirect
    */
   redirectToResetPasswordPage(token: string): Observable<any> {
     return this.http.get(
-      `${this.apiUrl}/redirectToResetPasswordPage?token=${token}`,
+      `${this.apiUrl}/auth/redirectToResetPasswordPage?token=${token}`,
       { responseType: 'text' }
     ).pipe(
       catchError(error => {
         console.error('Redirect error:', error);
         return of('Error occurred during redirect');
+      })
+    );
+  }
+
+  /**
+   * Make authenticated API call - example method showing how JWT is automatically included
+   * @param endpoint - API endpoint
+   * @returns Observable<any>
+   */
+  makeAuthenticatedRequest(endpoint: string): Observable<any> {
+    // The JWT token will be automatically added by the interceptor
+    return this.http.get(`${this.apiUrl}${endpoint}`).pipe(
+      catchError(error => {
+        console.error('Authenticated request error:', error);
+        return of({ error: 'Request failed' });
       })
     );
   }
@@ -165,7 +220,7 @@ export class AuthService {
    */
   savePassword(passwordDto: PasswordDto): Observable<{ [key: string]: string }> {
     return this.http.post<{ [key: string]: string }>(
-      `${this.apiUrl}/savePassword`, 
+      `${this.apiUrl}/auth/savePassword`, 
       passwordDto, 
       this.getHttpOptions()
     ).pipe(
@@ -180,11 +235,11 @@ export class AuthService {
 
   /**
    * Simplified login method
-   * @param nom - Username
+   * @param email - Email address
    * @param motdepasse - Password
    */
-  loginWithCredentials(nom: string, motdepasse: string): Observable<{ [key: string]: string }> {
-    const utilisateur: Utilisateur = { nom, motdepasse };
+  loginWithCredentials(email: string, motdepasse: string): Observable<{ [key: string]: string }> {
+    const utilisateur: Utilisateur = { email, motdepasse };
     return this.login(utilisateur);
   }
 
@@ -197,6 +252,24 @@ export class AuthService {
   signupWithCredentials(nom: string, email: string, motdepasse: string): Observable<{ [key: string]: string }> {
     const utilisateur: Utilisateur = { nom, email, motdepasse };
     return this.signup(utilisateur);
+  }
+
+  /**
+   * Simplified Verification method
+   * @param email - Email address
+   */
+  requestVerificationEmail(email: string): Observable<{ [key: string]: string }> {
+    const emailRequest: EmailRequest = { email };
+    return this.verifyEmail(emailRequest);
+  }
+
+  /**
+   * Simplified Email Token Verification method
+   * @param token - Verification token
+   */
+  validateEmailToken(token: string): Observable<{ [key: string]: string }> {
+    const emailVerificationDto: EmailVerificationDto = { token };
+    return this.verifyEmailToken(emailVerificationDto);
   }
 
   /**
@@ -244,7 +317,29 @@ export class AuthService {
 
   // GET user role
   getRole(): Role | null {
-  const user = this.getCurrentUser();
-  return user && user.role !== undefined ? user.role : null;
+    const user = this.getCurrentUser();
+    return user && user.role !== undefined ? user.role : null;
+  }
+
+  // Decode JWT token (basic implementation)
+  private decodeJWT(token: string): any {
+    try {
+      const payload = token.split('.')[1];
+      const decoded = atob(payload);
+      return JSON.parse(decoded);
+    } catch (error) {
+      console.error('Error decoding JWT:', error);
+      return null;
+    }
+  }
+
+  // Method to set user role manually (for testing purposes)
+  setUserRole(role: Role): void {
+    const user = this.getCurrentUser();
+    if (user) {
+      user.role = role;
+      localStorage.setItem(this.userKey, JSON.stringify(user));
+      this.currentUserSubject.next(user);
+    }
   }
 }

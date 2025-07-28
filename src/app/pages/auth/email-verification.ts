@@ -171,8 +171,8 @@ export class EmailVerification implements OnInit {
     }
 
     sendVerificationEmail() {
-        // Use reset password function temporarily for email verification
-        this.authService.requestPasswordReset(this.email).subscribe({
+        // Use proper email verification function
+        this.authService.requestVerificationEmail(this.email).subscribe({
             next: (response) => {
                 this.isVerifying = false;
                 if (response['message']) {
@@ -191,13 +191,18 @@ export class EmailVerification implements OnInit {
     }
 
     verifyEmail() {
-        // Use the redirectToResetPasswordPage function temporarily for token verification
-        this.authService.redirectToResetPasswordPage(this.token).subscribe({
+        // Use proper email token verification function
+        this.authService.validateEmailToken(this.token).subscribe({
             next: (response) => {
                 this.isVerifying = false;
-                // If the token is valid, consider verification successful
-                this.verificationSuccess = true;
-                console.log('Email verification result:', this.verificationSuccess);
+                if (response['message']) {
+                    // Token is valid, verification successful
+                    this.verificationSuccess = true;
+                    console.log('Email verification successful:', response['message']);
+                } else if (response['error']) {
+                    this.verificationSuccess = false;
+                    this.errorMessage = response['error'];
+                }
             },
             error: (error) => {
                 this.isVerifying = false;
@@ -216,8 +221,8 @@ export class EmailVerification implements OnInit {
 
         this.isResending = true;
         
-        // Use reset password function to resend verification email
-        this.authService.requestPasswordReset(this.email).subscribe({
+        // Use proper verification email function to resend verification email
+        this.authService.requestVerificationEmail(this.email).subscribe({
             next: (response) => {
                 this.isResending = false;
                 if (response['message']) {

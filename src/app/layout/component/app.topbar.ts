@@ -5,6 +5,8 @@ import { CommonModule } from '@angular/common';
 import { StyleClassModule } from 'primeng/styleclass';
 import { AppConfigurator } from './app.configurator';
 import { LayoutService } from '../service/layout.service';
+import { AuthService } from '../../services/auth.service';
+import { Role } from '../../models/auth.models';
 
 @Component({
     selector: 'app-topbar',
@@ -38,6 +40,18 @@ import { LayoutService } from '../service/layout.service';
         </div>
 
         <div class="layout-topbar-actions">
+            <!-- Admin Dashboard Button - Only visible for admin users -->
+            <button 
+                *ngIf="isAdmin()" 
+                type="button" 
+                class="layout-topbar-action mr-2" 
+                routerLink="/admin/dashboard"
+                title="Admin Dashboard"
+            >
+                <i class="pi pi-chart-line"></i>
+                <span class="hidden lg:inline ml-2">Dashboard</span>
+            </button>
+
             <div class="layout-config-menu">
                 <button type="button" class="layout-topbar-action" (click)="toggleDarkMode()">
                     <i [ngClass]="{ 'pi ': true, 'pi-moon': layoutService.isDarkTheme(), 'pi-sun': !layoutService.isDarkTheme() }"></i>
@@ -84,9 +98,14 @@ import { LayoutService } from '../service/layout.service';
 export class AppTopbar {
     items!: MenuItem[];
 
-    constructor(public layoutService: LayoutService) {}
+    constructor(public layoutService: LayoutService, private authService: AuthService) {}
 
     toggleDarkMode() {
         this.layoutService.layoutConfig.update((state) => ({ ...state, darkTheme: !state.darkTheme }));
+    }
+
+    isAdmin(): boolean {
+        const user = this.authService.getCurrentUser();
+        return user?.role === Role.Admin;
     }
 }

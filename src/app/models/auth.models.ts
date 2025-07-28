@@ -17,6 +17,11 @@ export interface PasswordDto {
   newPassword: string;
 }
 
+// Email verification token DTO
+export interface EmailVerificationDto {
+  token: string;
+}
+
 // Response interfaces
 export interface AuthResponse {
   message?: string;
