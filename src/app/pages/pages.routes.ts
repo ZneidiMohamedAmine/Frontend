@@ -7,5 +7,6 @@ export default [
     { path: 'documentation', component: Documentation },
     { path: 'crud', component: Crud },
     { path: 'empty', component: Empty },
+    { path: 'user-profile', loadComponent: () => import('../user-profile/user-profile.component').then(m => m.UserProfileComponent) },
     { path: '**', redirectTo: '/notfound' }
 ] as Routes;

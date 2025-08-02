@@ -36,6 +36,7 @@ export interface Projet {
   responsableId?: number;
   progression?: number; // percentage 0-100
   priorite?: 'BASSE' | 'MOYENNE' | 'HAUTE' | 'CRITIQUE';
+  devisId?: number; // Link to associated quote/devis
 }
 
 export interface KPI {
@@ -64,6 +65,7 @@ export interface Devis {
   description?: string;
   conditions?: string;
   items?: DevisItem[];
+  displayText?: string; // Helper property for dropdowns
 }
 
 export interface DevisItem {

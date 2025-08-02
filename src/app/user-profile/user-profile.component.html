@@ -1,0 +1,114 @@
+<div class="user-profile-container p-4">
+  <!-- Loading State -->
+  <div *ngIf="loading" class="text-center p-8">
+    <div class="spinner-border" role="status">
+      <span class="sr-only">Chargement...</span>
+    </div>
+    <p class="mt-2">Chargement du profil...</p>
+    <p class="text-sm text-gray-500 mt-2">Requêtes complétées: {{ completedRequests }}/{{ totalRequests }}</p>
+    <button (click)="forceStopLoading()" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+      Arrêter le chargement
+    </button>
+    <div class="mt-4 text-xs text-gray-400">
+      <p>Utilisateur actuel: {{ user?.fullName || 'Non connecté' }}</p>
+      <p>ID utilisateur: {{ user?.id || 'N/A' }}</p>
+    </div>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !loading" class="alert alert-danger text-center">
+    {{ error }}
+  </div>
+
+  <!-- User Profile Content -->
+  <div *ngIf="!loading && !error && user">
+    <!-- User Information -->
+    <div class="user-info text-center mb-8">
+      <img src="https://via.placeholder.com/150" alt="Avatar utilisateur" class="rounded-full w-32 h-32 mx-auto mb-4">
+      <h2 class="text-2xl font-bold">{{ getUserDisplayName() }}</h2>
+      <p class="text-gray-600">{{ getUserEmail() }}</p>
+      <div *ngIf="userDetails" class="mt-2">
+        <p *ngIf="userDetails.telephone" class="text-sm text-gray-500">{{ userDetails.telephone }}</p>
+        <p *ngIf="userDetails.role" class="text-sm text-blue-600 font-medium">{{ userDetails.role }}</p>
+      </div>
+    </div>
+
+    <!-- Projects -->
+    <div class="projects-section mb-8">
+      <h3 class="text-xl font-semibold mb-4">Mes Projets</h3>
+      <div *ngIf="projects.length === 0" class="text-center text-gray-500 p-4">
+        Aucun projet trouvé
+      </div>
+      <div *ngIf="projects.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div *ngFor="let project of projects" class="project-card p-4 border rounded-lg shadow-md">
+          <h4 class="font-bold">{{ project.nom }}</h4>
+          <p class="text-sm text-gray-600 mb-2">{{ project.description }}</p>
+          <p class="text-sm">Statut: <span class="font-medium">{{ getProjectStatusText(project.statut) }}</span></p>
+          <p class="text-sm">Budget: <span class="font-medium">{{ project.budget | currency:'EUR':'symbol':'1.2-2':'fr' }}</span></p>
+          <div *ngIf="project.dateFin" class="text-sm text-gray-500">
+            Échéance: {{ formatDate(project.dateFin) }}
+          </div>
+          <div class="progress-bar-container mt-2" *ngIf="project.progression !== undefined">
+            <div class="progress-bar h-4 bg-gray-200 rounded">
+              <div class="progress-bar-fill h-full bg-blue-500 rounded" [style.width.%]="project.progression"></div>
+            </div>
+            <p class="text-sm text-right">{{ project.progression }}%</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Transactions -->
+    <div class="transactions-section">
+      <h3 class="text-xl font-semibold mb-4">Mes Transactions</h3>
+      <div *ngIf="transactions.length === 0" class="text-center text-gray-500 p-4">
+        Aucune transaction trouvée
+      </div>
+      <div *ngIf="transactions.length > 0" class="transaction-list">
+        <div *ngFor="let transaction of transactions" class="transaction-item flex justify-between items-center p-3 border-b hover:bg-gray-50">
+          <div class="flex-1">
+            <p class="font-bold">{{ transaction.description || 'Transaction' }}</p>
+            <p class="text-sm text-gray-500">{{ formatDate(transaction.dateTransaction) }}</p>
+            <div class="flex gap-2 mt-1">
+              <span class="text-xs px-2 py-1 rounded" 
+                    [ngClass]="{
+                      'bg-green-100 text-green-800': transaction.statut === 'COMPLETED',
+                      'bg-yellow-100 text-yellow-800': transaction.statut === 'PENDING',
+                      'bg-red-100 text-red-800': transaction.statut === 'CANCELLED'
+                    }">
+                {{ getTransactionStatusText(transaction.statut) }}
+              </span>
+              <span class="text-xs px-2 py-1 rounded" 
+                    [ngClass]="{
+                      'bg-blue-100 text-blue-800': transaction.type === 'CREDIT',
+                      'bg-orange-100 text-orange-800': transaction.type === 'DEBIT'
+                    }">
+                {{ getTransactionTypeText(transaction.type) }}
+              </span>
+            </div>
+          </div>
+          <div class="text-right">
+            <p class="font-bold" 
+               [ngClass]="{
+                 'text-green-600': transaction.type === 'CREDIT',
+                 'text-red-600': transaction.type === 'DEBIT'
+               }">
+              {{ transaction.type === 'CREDIT' ? '+' : '-' }}{{ transaction.montant | currency:'EUR':'symbol':'1.2-2':'fr' }}
+            </p>
+            <p *ngIf="transaction.reference" class="text-xs text-gray-400">{{ transaction.reference }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fallback: Show basic user info if loading stopped but no detailed data -->
+  <div *ngIf="!loading && !error && user && !userDetails && projects.length === 0 && transactions.length === 0" class="text-center p-8">
+    <h2 class="text-xl font-bold mb-4">Profil Utilisateur</h2>
+    <div class="user-info-basic bg-gray-100 p-6 rounded-lg">
+      <h3 class="text-lg font-semibold">{{ user.fullName }}</h3>
+      <p class="text-gray-600">{{ user.email }}</p>
+      <p class="text-sm text-gray-500 mt-2">Les données détaillées ne sont pas disponibles pour le moment.</p>
+    </div>
+  </div>
+</div>

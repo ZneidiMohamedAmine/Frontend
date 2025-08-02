@@ -16,7 +16,9 @@ import { FormsModule } from '@angular/forms';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { DevisService } from '../../../services/devis.service';
 import { UtilisateurService } from '../../../services/utilisateur.service';
-import { Devis, DevisItem, Utilisateur } from '../../../models/business.models';
+import { ProjetService } from '../../../services/projet.service';
+import { Devis, DevisItem, Utilisateur, Projet } from '../../../models/business.models';
+import { Router } from '@angular/router';
 
 @Component({
     selector: 'app-admin-devis',
@@ -140,6 +142,7 @@ import { Devis, DevisItem, Utilisateur } from '../../../models/business.models';
                                 <th pSortableColumn="montantHT">Amount HT <p-sortIcon field="montantHT"></p-sortIcon></th>
                                 <th pSortableColumn="montantTTC">Amount TTC <p-sortIcon field="montantTTC"></p-sortIcon></th>
                                 <th pSortableColumn="statut">Status <p-sortIcon field="statut"></p-sortIcon></th>
+                                <th>Project</th>
                                 <th>Actions</th>
                             </tr>
                         </ng-template>
@@ -168,6 +171,14 @@ import { Devis, DevisItem, Utilisateur } from '../../../models/business.models';
                                     </p-tag>
                                 </td>
                                 <td>
+                                    <span *ngIf="hasLinkedProject(devis.id)" class="text-sm text-green-600">
+                                        <i class="pi pi-check-circle mr-1"></i>Project Created
+                                    </span>
+                                    <span *ngIf="!hasLinkedProject(devis.id)" class="text-sm text-muted-color">
+                                        No project
+                                    </span>
+                                </td>
+                                <td>
                                     <div class="flex gap-2">
                                         <p-button 
                                             icon="pi pi-eye" 
@@ -182,6 +193,13 @@ import { Devis, DevisItem, Utilisateur } from '../../../models/business.models';
                                             pTooltip="Edit">
                                         </p-button>
                                         <p-button 
+                                            *ngIf="devis.statut === 'ACCEPTE' && !hasLinkedProject(devis.id)"
+                                            icon="pi pi-briefcase" 
+                                            styleClass="p-button-rounded p-button-text p-button-sm p-button-success"
+                                            (click)="createProjectFromDevis(devis)"
+                                            pTooltip="Create Project">
+                                        </p-button>
+                                        <p-button 
                                             icon="pi pi-trash" 
                                             styleClass="p-button-rounded p-button-text p-button-sm p-button-danger"
                                             (click)="deleteDevis(devis)"
@@ -194,7 +212,7 @@ import { Devis, DevisItem, Utilisateur } from '../../../models/business.models';
 
                         <ng-template pTemplate="emptymessage">
                             <tr>
-                                <td colspan="8" class="text-center py-4">
+                                <td colspan="9" class="text-center py-4">
                                     <i class="pi pi-file-edit text-4xl text-muted-color mb-3"></i>
                                     <div class="text-muted-color">No quotes found</div>
                                 </td>
@@ -395,6 +413,121 @@ import { Devis, DevisItem, Utilisateur } from '../../../models/business.models';
             </ng-template>
         </p-dialog>
 
+        <!-- Create Project Dialog -->
+        <p-dialog 
+            [(visible)]="createProjectDialog" 
+            [style]="{width: '600px'}" 
+            header="Create Project from Quote" 
+            [modal]="true" 
+            styleClass="p-fluid">
+            
+            <ng-template pTemplate="content">
+                <div *ngIf="selectedDevisForProject" class="grid">
+                    <!-- Quote Information -->
+                    <div class="col-12">
+                        <div class="card bg-blue-50 border-1 border-blue-200 mb-4">
+                            <h6 class="text-blue-800 mb-3">
+                                <i class="pi pi-file-edit mr-2"></i>Quote Information
+                            </h6>
+                            <div class="grid">
+                                <div class="col-6">
+                                    <small class="text-muted-color">Quote Number:</small>
+                                    <div class="font-medium">{{ selectedDevisForProject.numero }}</div>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted-color">Amount:</small>
+                                    <div class="font-medium text-green-600">€{{ selectedDevisForProject.montantTTC | number:'1.2-2' }}</div>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted-color">Client:</small>
+                                    <div class="font-medium">{{ getClientName(selectedDevisForProject.clientId) }}</div>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted-color">Description:</small>
+                                    <div class="font-medium">{{ selectedDevisForProject.description | slice:0:50 }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Project Details -->
+                    <div class="col-12">
+                        <label for="projectName">Project Name *</label>
+                        <input 
+                            pInputText 
+                            id="projectName" 
+                            [(ngModel)]="newProject.nom" 
+                            required />
+                    </div>
+                    
+                    <div class="col-12">
+                        <label for="projectDescription">Project Description</label>
+                        <textarea 
+                            pInputTextarea 
+                            id="projectDescription" 
+                            [(ngModel)]="newProject.description" 
+                            rows="3">
+                        </textarea>
+                    </div>
+                    
+                    <div class="col-6">
+                        <label for="projectStartDate">Start Date *</label>
+                        <p-calendar 
+                            id="projectStartDate" 
+                            [(ngModel)]="newProject.dateDebut" 
+                            dateFormat="dd/mm/yy">
+                        </p-calendar>
+                    </div>
+                    
+                    <div class="col-6">
+                        <label for="projectEndDate">End Date</label>
+                        <p-calendar 
+                            id="projectEndDate" 
+                            [(ngModel)]="newProject.dateFin" 
+                            dateFormat="dd/mm/yy">
+                        </p-calendar>
+                    </div>
+                    
+                    <div class="col-6">
+                        <label for="projectBudget">Budget *</label>
+                        <p-inputNumber 
+                            id="projectBudget" 
+                            [(ngModel)]="newProject.budget" 
+                            mode="currency" 
+                            currency="EUR" 
+                            locale="fr-FR">
+                        </p-inputNumber>
+                    </div>
+                    
+                    <div class="col-6">
+                        <label for="projectPriority">Priority</label>
+                        <p-dropdown 
+                            id="projectPriority" 
+                            [(ngModel)]="newProject.priorite" 
+                            [options]="priorityOptions" 
+                            optionLabel="label" 
+                            optionValue="value">
+                        </p-dropdown>
+                    </div>
+                </div>
+            </ng-template>
+            
+            <ng-template pTemplate="footer">
+                <p-button 
+                    label="Cancel" 
+                    icon="pi pi-times" 
+                    styleClass="p-button-text" 
+                    (click)="hideCreateProjectDialog()">
+                </p-button>
+                <p-button 
+                    label="Create Project" 
+                    icon="pi pi-check" 
+                    (click)="saveProjectFromDevis()" 
+                    [disabled]="!isProjectFormValid()">
+                </p-button>
+            </ng-template>
+        </p-dialog>
+
         <p-confirmDialog></p-confirmDialog>
         <p-toast></p-toast>
     `
@@ -412,8 +545,18 @@ export class AdminDevis implements OnInit {
         statut: 'BROUILLON'
     };
     devisDialog: boolean = false;
+    createProjectDialog: boolean = false;
     loading: boolean = false;
     clients: Utilisateur[] = [];
+    linkedProjects: Projet[] = [];
+
+    selectedDevisForProject: Devis | null = null;
+    newProject: Projet = {
+        nom: '',
+        dateDebut: new Date(),
+        budget: 0,
+        statut: 'PLANIFIE'
+    };
 
     totalQuotes: number = 0;
     acceptedQuotes: number = 0;
@@ -428,16 +571,26 @@ export class AdminDevis implements OnInit {
         { label: 'Expired', value: 'EXPIRE' }
     ];
 
+    priorityOptions = [
+        { label: 'Low', value: 'BASSE' },
+        { label: 'Medium', value: 'MOYENNE' },
+        { label: 'High', value: 'HAUTE' },
+        { label: 'Critical', value: 'CRITIQUE' }
+    ];
+
     constructor(
         private devisService: DevisService,
         private utilisateurService: UtilisateurService,
+        private projetService: ProjetService,
         private confirmationService: ConfirmationService,
-        private messageService: MessageService
+        private messageService: MessageService,
+        private router: Router
     ) {}
 
     ngOnInit() {
         this.loadDevis();
         this.loadClients();
+        this.loadLinkedProjects();
     }
 
     loadDevis() {
@@ -461,12 +614,23 @@ export class AdminDevis implements OnInit {
     }
 
     loadClients() {
-        this.utilisateurService.getUtilisateursByRole('CLIENT').subscribe({
+        this.utilisateurService.getAllUtilisateurs().subscribe({
             next: (clients) => {
                 this.clients = clients;
             },
             error: (error) => {
                 console.error('Error loading clients:', error);
+            }
+        });
+    }
+
+    loadLinkedProjects() {
+        this.projetService.getAllProjets().subscribe({
+            next: (projects) => {
+                this.linkedProjects = projects.filter(p => p.devisId);
+            },
+            error: (error) => {
+                console.error('Error loading linked projects:', error);
             }
         });
     }
@@ -508,6 +672,68 @@ export class AdminDevis implements OnInit {
             statut: 'BROUILLON',
             items: []
         };
+    }
+
+    createProjectFromDevis(devis: Devis) {
+        this.selectedDevisForProject = devis;
+        this.newProject = {
+            nom: devis.description || `Project for ${devis.numero}`,
+            description: devis.description,
+            dateDebut: new Date(),
+            dateFin: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days from now
+            budget: devis.montantTTC || 0,
+            statut: 'PLANIFIE',
+            priorite: 'MOYENNE',
+            progression: 0,
+            clientId: devis.clientId,
+            devisId: devis.id
+        };
+        this.createProjectDialog = true;
+    }
+
+    hideCreateProjectDialog() {
+        this.createProjectDialog = false;
+        this.selectedDevisForProject = null;
+        this.newProject = {
+            nom: '',
+            dateDebut: new Date(),
+            budget: 0,
+            statut: 'PLANIFIE'
+        };
+    }
+
+    saveProjectFromDevis() {
+        if (this.isProjectFormValid()) {
+            this.projetService.createProjet(this.newProject).subscribe({
+                next: (createdProject) => {
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Success',
+                        detail: 'Project created successfully from quote'
+                    });
+                    this.loadLinkedProjects();
+                    this.hideCreateProjectDialog();
+                    
+                    // Ask if user wants to navigate to project management
+                    this.confirmationService.confirm({
+                        message: 'Project created successfully! Would you like to go to project management?',
+                        header: 'Navigate to Projects',
+                        icon: 'pi pi-question-circle',
+                        accept: () => {
+                            this.router.navigate(['/admin/projects']);
+                        }
+                    });
+                },
+                error: (error) => {
+                    console.error('Error creating project:', error);
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: 'Failed to create project'
+                    });
+                }
+            });
+        }
     }
 
     editDevis(devis: Devis) {
@@ -650,6 +876,10 @@ export class AdminDevis implements OnInit {
         return !!(this.devis.numero && this.devis.clientId && this.devis.dateCreation && this.devis.dateValidite && this.devis.statut);
     }
 
+    isProjectFormValid(): boolean {
+        return !!(this.newProject.nom && this.newProject.dateDebut && this.newProject.budget);
+    }
+
     getStatusSeverity(status: string): string {
         switch (status) {
             case 'BROUILLON': return 'info';
@@ -668,5 +898,10 @@ export class AdminDevis implements OnInit {
 
     isExpired(dateValidite: Date): boolean {
         return new Date(dateValidite) < new Date();
+    }
+
+    hasLinkedProject(devisId: number | undefined): boolean {
+        if (!devisId) return false;
+        return this.linkedProjects.some(p => p.devisId === devisId);
     }
 }

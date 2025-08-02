@@ -17,7 +17,8 @@ import { FormsModule } from '@angular/forms';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ProjetService } from '../../../services/projet.service';
 import { UtilisateurService } from '../../../services/utilisateur.service';
-import { Projet, Utilisateur } from '../../../models/business.models';
+import { DevisService } from '../../../services/devis.service';
+import { Projet, Utilisateur, Devis } from '../../../models/business.models';
 
 @Component({
     selector: 'app-admin-projects',
@@ -86,6 +87,7 @@ import { Projet, Utilisateur } from '../../../models/business.models';
                                 <th pSortableColumn="statut">Status <p-sortIcon field="statut"></p-sortIcon></th>
                                 <th pSortableColumn="progression">Progress <p-sortIcon field="progression"></p-sortIcon></th>
                                 <th pSortableColumn="priorite">Priority <p-sortIcon field="priorite"></p-sortIcon></th>
+                                <th>Linked Quote</th>
                                 <th>Actions</th>
                             </tr>
                         </ng-template>
@@ -123,6 +125,14 @@ import { Projet, Utilisateur } from '../../../models/business.models';
                                     </p-tag>
                                 </td>
                                 <td>
+                                    <span *ngIf="project.devisId" class="text-sm text-blue-600">
+                                        {{ getDevisNumber(project.devisId) }}
+                                    </span>
+                                    <span *ngIf="!project.devisId" class="text-sm text-muted-color">
+                                        No quote linked
+                                    </span>
+                                </td>
+                                <td>
                                     <div class="flex gap-2">
                                         <p-button 
                                             icon="pi pi-pencil" 
@@ -143,7 +153,7 @@ import { Projet, Utilisateur } from '../../../models/business.models';
 
                         <ng-template pTemplate="emptymessage">
                             <tr>
-                                <td colspan="8" class="text-center py-4">
+                                <td colspan="9" class="text-center py-4">
                                     <i class="pi pi-briefcase text-4xl text-muted-color mb-3"></i>
                                     <div class="text-muted-color">No projects found</div>
                                 </td>
@@ -157,7 +167,7 @@ import { Projet, Utilisateur } from '../../../models/business.models';
         <!-- Project Dialog -->
         <p-dialog 
             [(visible)]="projectDialog" 
-            [style]="{width: '600px'}" 
+            [style]="{width: '700px'}" 
             header="Project Details" 
             [modal]="true" 
             styleClass="p-fluid">
@@ -182,6 +192,77 @@ import { Projet, Utilisateur } from '../../../models/business.models';
                             [(ngModel)]="project.description" 
                             rows="3">
                         </textarea>
+                    </div>
+
+                    <!-- Link to Devis Section -->
+                    <div class="col-12">
+                        <div class="card bg-blue-50 border-1 border-blue-200">
+                            <h6 class="text-blue-800 mb-3">
+                                <i class="pi pi-link mr-2"></i>Link to Quote (Optional)
+                            </h6>
+                            <div class="grid">
+                                <div class="col-8">
+                                    <label for="devisId">Select Quote</label>
+                                    <p-dropdown 
+                                        id="devisId" 
+                                        [(ngModel)]="project.devisId" 
+                                        [options]="acceptedDevis" 
+                                        optionLabel="displayText" 
+                                        optionValue="id"
+                                        placeholder="Select a quote to link"
+                                        (onChange)="onDevisSelected($event)">
+                                        <ng-template pTemplate="selectedItem" let-selectedDevis>
+                                            <div *ngIf="selectedDevis">
+                                                <span class="font-medium">{{ selectedDevis.numero }}</span>
+                                                <span class="text-sm text-muted-color ml-2">€{{ selectedDevis.montantTTC | number:'1.2-2' }}</span>
+                                            </div>
+                                        </ng-template>
+                                        <ng-template pTemplate="item" let-devis>
+                                            <div class="flex justify-content-between align-items-center w-full">
+                                                <div>
+                                                    <div class="font-medium">{{ devis.numero }}</div>
+                                                    <div class="text-sm text-muted-color">{{ devis.description | slice:0:40 }}{{ devis.description?.length > 40 ? '...' : '' }}</div>
+                                                </div>
+                                                <div class="text-right">
+                                                    <div class="font-medium text-green-600">€{{ devis.montantTTC | number:'1.2-2' }}</div>
+                                                    <div class="text-xs text-muted-color">{{ getClientName(devis.clientId) }}</div>
+                                                </div>
+                                            </div>
+                                        </ng-template>
+                                    </p-dropdown>
+                                </div>
+                                <div class="col-4">
+                                    <label>&nbsp;</label>
+                                    <p-button 
+                                        label="Import Data" 
+                                        icon="pi pi-download" 
+                                        styleClass="p-button-outlined p-button-sm"
+                                        (click)="importFromDevis()"
+                                        [disabled]="!project.devisId">
+                                    </p-button>
+                                </div>
+                            </div>
+                            <div *ngIf="selectedDevisInfo" class="mt-3 p-3 bg-white border-round">
+                                <div class="grid">
+                                    <div class="col-6">
+                                        <small class="text-muted-color">Quote Number:</small>
+                                        <div class="font-medium">{{ selectedDevisInfo.numero }}</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted-color">Amount:</small>
+                                        <div class="font-medium text-green-600">€{{ selectedDevisInfo.montantTTC | number:'1.2-2' }}</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted-color">Client:</small>
+                                        <div class="font-medium">{{ getClientName(selectedDevisInfo.clientId) }}</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted-color">Valid Until:</small>
+                                        <div class="font-medium">{{ selectedDevisInfo.dateValidite | date:'short' }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="col-6">
@@ -303,6 +384,8 @@ export class AdminProjects implements OnInit {
     loading: boolean = false;
     clients: Utilisateur[] = [];
     responsables: Utilisateur[] = [];
+    acceptedDevis: Devis[] = [];
+    selectedDevisInfo: Devis | null = null;
 
     statusOptions = [
         { label: 'Planned', value: 'PLANIFIE' },
@@ -321,6 +404,7 @@ export class AdminProjects implements OnInit {
     constructor(
         private projetService: ProjetService,
         private utilisateurService: UtilisateurService,
+        private devisService: DevisService,
         private confirmationService: ConfirmationService,
         private messageService: MessageService
     ) {}
@@ -328,6 +412,7 @@ export class AdminProjects implements OnInit {
     ngOnInit() {
         this.loadProjects();
         this.loadUsers();
+        this.loadAcceptedDevis();
     }
 
     loadProjects() {
@@ -352,11 +437,25 @@ export class AdminProjects implements OnInit {
     loadUsers() {
         this.utilisateurService.getAllUtilisateurs().subscribe({
             next: (users) => {
-                this.clients = users.filter(u => u.role === 'CLIENT');
+                this.clients = users;
                 this.responsables = users.filter(u => u.role === 'ADMIN' || u.role === 'MANAGER');
             },
             error: (error) => {
                 console.error('Error loading users:', error);
+            }
+        });
+    }
+
+    loadAcceptedDevis() {
+        this.devisService.getDevisByStatus('ACCEPTE').subscribe({
+            next: (devis) => {
+                this.acceptedDevis = devis.map(d => ({
+                    ...d,
+                    displayText: `${d.numero} - €${d.montantTTC?.toFixed(2)} - ${this.getClientName(d.clientId)}`
+                }));
+            },
+            error: (error) => {
+                console.error('Error loading accepted devis:', error);
             }
         });
     }
@@ -370,6 +469,7 @@ export class AdminProjects implements OnInit {
             priorite: 'MOYENNE',
             progression: 0
         };
+        this.selectedDevisInfo = null;
         this.projectDialog = true;
     }
 
@@ -381,11 +481,48 @@ export class AdminProjects implements OnInit {
             budget: 0,
             statut: 'PLANIFIE'
         };
+        this.selectedDevisInfo = null;
     }
 
     editProject(project: Projet) {
         this.project = { ...project };
+        if (this.project.devisId) {
+            this.selectedDevisInfo = this.acceptedDevis.find(d => d.id === this.project.devisId) || null;
+        }
         this.projectDialog = true;
+    }
+
+    onDevisSelected(event: any) {
+        if (event.value) {
+            this.selectedDevisInfo = this.acceptedDevis.find(d => d.id === event.value) || null;
+        } else {
+            this.selectedDevisInfo = null;
+        }
+    }
+
+    importFromDevis() {
+        if (this.selectedDevisInfo) {
+            this.confirmationService.confirm({
+                message: 'This will import data from the selected quote and may overwrite existing project data. Continue?',
+                header: 'Import Quote Data',
+                icon: 'pi pi-question-circle',
+                accept: () => {
+                    // Import data from devis
+                    if (this.selectedDevisInfo) {
+                        this.project.nom = this.selectedDevisInfo.description || this.project.nom;
+                        this.project.budget = this.selectedDevisInfo.montantTTC || this.project.budget;
+                        this.project.clientId = this.selectedDevisInfo.clientId;
+                        this.project.description = this.selectedDevisInfo.description;
+                        
+                        this.messageService.add({
+                            severity: 'success',
+                            summary: 'Success',
+                            detail: 'Quote data imported successfully'
+                        });
+                    }
+                }
+            });
+        }
     }
 
     saveProject() {
@@ -486,5 +623,15 @@ export class AdminProjects implements OnInit {
             case 'CRITIQUE': return 'danger';
             default: return 'info';
         }
+    }
+
+    getClientName(clientId: number): string {
+        const client = this.clients.find(c => c.id === clientId);
+        return client?.nom || 'Unknown Client';
+    }
+
+    getDevisNumber(devisId: number): string {
+        const devis = this.acceptedDevis.find(d => d.id === devisId);
+        return devis?.numero || 'Unknown Quote';
     }
 }

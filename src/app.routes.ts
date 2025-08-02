@@ -17,6 +17,7 @@ import { About } from './app/pages/about/about';
 import { Calculator } from './app/pages/calculator/calculator';
 import { Notfound } from './app/pages/notfound/notfound';
 import { AdminGuard } from './app/guards/admin.guard';
+import { UserProfileComponent } from './app/user-profile/user-profile.component';
 
 export const appRoutes: Routes = [
     {
@@ -42,6 +43,7 @@ export const appRoutes: Routes = [
     { path: 'portfolio', component: Portfolio },
     { path: 'about', component: About },
     { path: 'calculator', component: Calculator },
+    { path: 'user-profile', component: UserProfileComponent },
     { path: 'test-admin', component: TestAdmin },
     { path: 'notfound', component: Notfound },
     { path: 'auth', loadChildren: () => import('./app/pages/auth/auth.routes') },
